@@ -9,6 +9,7 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('');
   const [newNameFilter, setNewNameFilter] = useState('');
   const [confirmationMessage, setConfirmationMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     PersonService
@@ -27,18 +28,23 @@ const App = () => {
     if (persons.map(person => person.name).includes(newName)) {
       if (!window.confirm(newName + " is already added to phonebook, replace the old number with a new one?")) return;
       
-      const personToUpdate = persons.find(p => p.name = newName);
+      const personToUpdate = persons.find(p => p.name === newName);
       PersonService
         .update(personToUpdate.id, {...personToUpdate, number: newNumber})
-        .then(updatedPerson => setPersons(persons.map(p => p.id !== updatedPerson.id ? p : updatedPerson)))
-      setConfirmationMessage(`Person '${newName}' had his number modified to '${newNumber}'`)
-      setTimeout(() => {setConfirmationMessage(null)}, 5000)
-      return;
+        .then(updatedPerson => {
+          setPersons(persons.map(p => p.id !== updatedPerson.id ? p : updatedPerson))
+          setConfirmationMessage(`Person '${newName}' had his number modified to '${newNumber}'`)
+          setTimeout(() => {setConfirmationMessage(null)}, 4000)
+        })
+        .catch(error => {
+          setErrorMessage(error.response.data.error)
+          setTimeout(() => {setErrorMessage(null)}, 4000)
+        })
     }
 
     const personObject = {
       name: newName,
-      number: newNumber
+      number: newNumbers
     }
     PersonService
       .create(personObject)
@@ -59,6 +65,7 @@ const App = () => {
   return (
     <div>
       <Notification message={confirmationMessage} />
+      <Error message={errorMessage} />
       <h2>Phonebook</h2>
       <form onSubmit={addPerson}>
       <Filter newNameFilter={newNameFilter} handleNameFilter={handleNameFilter}/>
@@ -124,6 +131,18 @@ const Notification = ({ message }) => {
 
   return (
     <div className="confirmation">
+      {message}
+    </div>
+  )
+}
+
+const Error = ({ message }) => {
+  if (message === null) {
+    return null
+  }
+
+  return (
+    <div className="error">
       {message}
     </div>
   )
